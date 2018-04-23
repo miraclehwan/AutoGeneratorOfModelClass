@@ -1,9 +1,16 @@
 package com.example.miraclehwan.autogeneratemodelclass;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -18,44 +25,70 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
-    String URL = "http://samples.openweathermap.org/data/2.5/weather?q=London,uk&appid=b6907d289e10d714a6e88b30761fae22";
-
-    String result;
     ArrayList<String> resultList = new ArrayList<>();
+    String result;
 
     int T_VALUE = 1;
     int T_OBJECT = 2;
     int T_ARRAY = 3;
 
-    String MainClassName;
     ArrayList<String> AnnotationList = new ArrayList<>();
     ArrayList<String> GetterList = new ArrayList<>();
-
-    String[] list = {"id", "main", "description", "icon"};
-
-    String json = "{\"coord\":{\"lon\":-0.13,\"lat\":51.51},\"weather\":[{\"id\":300,\"main\":\"Drizzle\",\"description\":\"light intensity drizzle\",\"icon\":\"09d\"}],\"base\":\"stations\",\"main\":{\"temp\":280.32,\"pressure\":1012,\"humidity\":81,\"temp_min\":279.15,\"temp_max\":281.15},\"visibility\":10000,\"wind\":{\"speed\":4.1,\"deg\":80},\"clouds\":{\"all\":90},\"dt\":1485789600,\"sys\":{\"type\":1,\"id\":5091,\"message\":0.0103,\"country\":\"GB\",\"sunrise\":1485762037,\"sunset\":1485794875},\"id\":2643743,\"name\":\"London\",\"cod\":200}";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        MainClassName = "WeatherRepo";
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(new Runnable() {
+        final TextView resultTextview = (TextView) findViewById(R.id.result);
+        final EditText getJsondata = (EditText) findViewById(R.id.inputJson);
+        final EditText getClassname = (EditText) findViewById(R.id.inputClassName);
+        Button makeBtn = (Button) findViewById(R.id.makeBtn);
+        final Button copyBtn = (Button) findViewById(R.id.resultCopyBtn);
+
+        makeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void run() {
-                getModelClassData(json, MainClassName);
-                String result = "";
-                for (int i = 0; i < resultList.size(); i++) {
-                    result = result + resultList.get(i);
+            public void onClick(View v) {
+                if (getJsondata.getText().length()!=0 && getClassname.getText().length()!=0){
+                    final String MainClassName = getClassname.getText().toString();
+                    final String JsonData = getJsondata.getText().toString();
+                    Executor executor = Executors.newSingleThreadExecutor();
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            resultList.clear();
+                            getModelClassData(JsonData, MainClassName);
+                            result = "";
+                            for (int i = 0; i < resultList.size(); i++) {
+                                result = result + resultList.get(i);
+                            }
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    resultTextview.setText(result);
+                                }
+                            });
+                        }
+                    });
+                }else{
+                    Toast.makeText(MainActivity.this, "Check your input", Toast.LENGTH_SHORT).show();
                 }
-                Log.e("daehwanlog", result);
             }
         });
 
-
-
+        copyBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (resultTextview.getText().length()!=0){
+                    ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData clipData = ClipData.newPlainText("Result", resultTextview.getText());
+                    clipboardManager.setPrimaryClip(clipData);
+                    Toast.makeText(MainActivity.this, "Copied", Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(MainActivity.this, "Result is Empty", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
     }
 
@@ -82,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String getModelClassData(String jsonInput, String className){
+    private void getModelClassData(String jsonInput, String className){
         HashMap<String, String> todoItem;
         ArrayList<HashMap<String, String>> todoList = new ArrayList<HashMap<String, String>>();
         try {
@@ -122,18 +155,14 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        String result = null;
-
-        result = getString(R.string.ClassStart, className);
         resultList.add(getString(R.string.ClassStart, className));
 
         for (int i = 0; i < AnnotationList.size(); i++) {
-            result = result + "\n" + AnnotationList.get(i);
             resultList.add("\n" + AnnotationList.get(i));
         }
-//        for (int i = 0; i < GetterList.size(); i++) {
-//            result = result + "\n" + GetterList.get(i);
-//        }
+        for (int i = 0; i < GetterList.size(); i++) {
+            resultList.add("\n\n" + GetterList.get(i));
+        }
 
         AnnotationList.clear();
         GetterList.clear();
@@ -144,11 +173,8 @@ public class MainActivity extends AppCompatActivity {
             getModelClassData(todoList.get(i).get(key), key);
         }
 
-        result = result + getString(R.string.ClassEnd);
         resultList.add(getString(R.string.ClassEnd));
 
-//        Log.e("daehwanlog/" + className, result);
-        return result;
     }
 
 }

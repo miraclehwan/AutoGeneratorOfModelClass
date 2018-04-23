@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">AutoGenerateModelClass</string>
 
-    <string name="ClassStart">\npublic class %s \{\n</string>
-    <string name="ClassEnd">\n\n\}\n</string>
+    <string name="ClassStart">\n\npublic class %s \{\n</string>
+    <string name="ClassEnd">\n\n\}</string>
     <string name="annotationSerializedName">\u0040SerializedName(\"%s\")\n%s %s;</string>
     <string name="getterItem">public %s get%s() \{\nreturn %s;\n\}</string>
 
